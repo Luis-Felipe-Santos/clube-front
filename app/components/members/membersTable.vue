@@ -435,11 +435,13 @@ const columns = [
                 label: "Dependentes",
                 icon: "i-lucide-users",
                 onSelect: () => openDependentsModal(member),
+                class: "cursor-pointer",
               },
               {
                 label: "Editar",
                 icon: "i-lucide-pencil",
                 onSelect: () => openEditMemberModal(member),
+                class: "cursor-pointer",
               },
               {
                 label: isInactive
@@ -448,6 +450,7 @@ const columns = [
                 icon: isInactive
                   ? "i-material-symbols:person-add-outline"
                   : "i-material-symbols:person-off-outline",
+                class: "cursor-pointer",
                 onSelect: () =>
                   isInactive
                     ? reactivateMember(member)
@@ -462,6 +465,7 @@ const columns = [
               icon: "i-lucide-ellipsis-vertical",
               color: "neutral",
               variant: "ghost",
+              class: "cursor-pointer",
             }),
         },
       );
@@ -508,6 +512,7 @@ watch([sortBy, sortDirection], () => {
             value-key="value"
             option-attribute="label"
             placeholder="Selecione o clube"
+            class="cursor-pointer"
           />
         </div>
 
@@ -518,6 +523,7 @@ watch([sortBy, sortDirection], () => {
             value-key="value"
             option-attribute="label"
             placeholder="Ordenar por"
+            class="cursor-pointer"
           />
         </div>
       </div>

@@ -255,7 +255,7 @@ watch(
             type="file"
             accept="image/*"
             @change="handleFileChange"
-            class="block w-full text-sm"
+            class="block w-full text-sm cursor-pointer"
           />
 
           <div v-if="imagePreview" class="mt-3">
@@ -274,6 +274,7 @@ watch(
             variant="soft"
             label="Cancelar"
             @click="isOpen = false"
+            class="cursor-pointer"
           />
 
           <UButton
@@ -282,6 +283,7 @@ watch(
             icon="i-lucide-save"
             :loading="loading"
             :disabled="loading"
+            class="cursor-pointer"
           />
         </div>
       </UForm>

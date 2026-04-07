@@ -99,6 +99,7 @@ function getStatusColor(status: string) {
                   icon="i-lucide-badge-check"
                   label="Quitar"
                   @click="emit('quitar', payment)"
+                  class="cursor-pointer"
                 />
 
                 <UButton
@@ -108,6 +109,7 @@ function getStatusColor(status: string) {
                   icon="i-lucide-pencil"
                   label="Ajustar"
                   @click="emit('ajustar', payment)"
+                  class="cursor-pointer"
                 />
               </div>
             </td>

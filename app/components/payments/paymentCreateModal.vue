@@ -142,6 +142,7 @@ async function handleCreate() {
               :items="socioPlanoOptions"
               :loading="loadingSocioPlanos"
               placeholder="Selecione o sócio"
+              class="cursor-pointer"
             />
           </UFormField>
 
@@ -185,6 +186,7 @@ async function handleCreate() {
               variant="soft"
               label="Cancelar"
               @click="closeModal"
+              class="cursor-pointer"
             />
 
             <UButton
@@ -192,6 +194,7 @@ async function handleCreate() {
               icon="i-lucide-plus"
               label="Criar pagamento"
               @click="handleCreate"
+              class="cursor-pointer"
             />
           </div>
         </div>

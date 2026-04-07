@@ -33,6 +33,7 @@ export interface PagamentoQuitarDTO {
 
 export interface PagamentoAjusteDTO {
   dataPagamento?: string | null
+  valorFinal?: number | null
   observacao?: string | null
 }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import PaymentsTable from "~/components/payments/paymentsTable.vue";
+import { parseCompetenciaToApi } from "~/utils/payments";
 import type {
   PagamentoLista,
   StatusPagamento,
@@ -122,7 +123,7 @@ async function loadPayments() {
         filters.planoId && filters.planoId !== "TODOS"
           ? Number(filters.planoId)
           : null,
-      competencia: filters.competencia || null,
+      competencia: parseCompetenciaToApi(filters.competencia),
       status: filters.status === "TODOS" ? null : filters.status,
       busca: filters.busca || null,
     });
@@ -183,6 +184,7 @@ onMounted(async () => {
               :items="clubOptions"
               :loading="loadingClubs"
               placeholder="Selecione o clube"
+              class="cursor-pointer"
             />
           </UFormField>
 
@@ -193,11 +195,12 @@ onMounted(async () => {
               :loading="loadingPlans"
               placeholder="Todos os planos"
               :disabled="!filters.clubeId"
+              class="cursor-pointer"
             />
           </UFormField>
 
           <UFormField label="Competência">
-            <UInput v-model="filters.competencia" placeholder="2026-03" />
+            <UInput v-model="filters.competencia" placeholder="MM/AAAA" />
           </UFormField>
 
           <UFormField label="Status">
@@ -205,6 +208,7 @@ onMounted(async () => {
               v-model="filters.status"
               :items="statusOptions"
               placeholder="Todos os status"
+              class="cursor-pointer"
             />
           </UFormField>
 
@@ -223,12 +227,14 @@ onMounted(async () => {
             label="Novo pagamento"
             :disabled="!filters.clubeId"
             @click="openCreateModal = true"
+            class="cursor-pointer"
           />
 
           <UButton
             icon="i-lucide-search"
             label="Buscar pagamentos"
             @click="loadPayments"
+            class="cursor-pointer"
           />
         </div>
       </UCard>

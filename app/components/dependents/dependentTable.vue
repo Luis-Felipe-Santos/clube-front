@@ -232,17 +232,20 @@ const columns = [
             label: "Editar",
             icon: "i-lucide-pencil",
             onSelect: () => editarDependente(dependente),
+            class: "cursor-pointer",
           },
           dependente.status === "ATIVO"
             ? {
                 label: "Inativar",
                 icon: "i-lucide-user-minus",
                 onSelect: () => inativarDependente(dependente),
+                class: "cursor-pointer",
               }
             : {
                 label: "Reativar",
                 icon: "i-lucide-user-check",
                 onSelect: () => reativarDependente(dependente),
+                class: "cursor-pointer",
               },
         ],
       ];
@@ -287,6 +290,7 @@ watch(
         icon="i-lucide-plus"
         color="success"
         @click="novoDependente"
+        class="cursor-pointer"
       />
     </div>
 

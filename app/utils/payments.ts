@@ -21,8 +21,34 @@ export function formatCurrency(value?: number | null) {
   }).format(value)
 }
 
+
 export function getCompetencia(ano: number, mes: number) {
   return `${ano}-${String(mes).padStart(2, "0")}`
+}
+
+export function formatCompetencia(competencia?: string | null) {
+  if (!competencia) return "-"
+
+  const [ano, mes] = competencia.split("-")
+
+  if (!ano || !mes) return competencia
+
+  return `${mes}/${ano}`
+}
+
+
+export function parseCompetenciaToApi(value?: string | null) {
+  if (!value) return null
+
+  const cleaned = value.trim()
+
+  const match = cleaned.match(/^(\d{2})\/(\d{4})$/)
+
+  if (!match) return null
+
+  const [, mes, ano] = match
+
+  return `${ano}-${mes}`
 }
 
 export function getStatusClass(status?: string | null) {
@@ -35,5 +61,18 @@ export function getStatusClass(status?: string | null) {
       return "bg-red-100 text-red-700"
     default:
       return "bg-gray-100 text-gray-400"
+  }
+}
+
+export function getStatusLabel(status?: string | null) {
+  switch (status) {
+    case "PAGO":
+      return "Pago"
+    case "PENDENTE":
+      return "Pendente"
+    case "ATRASADO":
+      return "Atrasado"
+    default:
+      return "-"
   }
 }

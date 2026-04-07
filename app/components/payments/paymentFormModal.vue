@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PagamentoLista } from "~/composables/usePayments";
+import { formatCompetencia, formatCurrency } from "~/utils/payments";
 
 const props = defineProps<{
   open: boolean;
@@ -19,12 +20,11 @@ const loading = ref(false);
 
 const form = reactive({
   dataPagamento: "",
+  valorFinal: undefined as number | undefined,
   observacao: "",
 });
 
 const isQuitar = computed(() => props.mode === "quitar");
-
-const today = new Date().toISOString().split("T")[0] ?? "";
 
 watch(
   () => props.open,
@@ -34,6 +34,7 @@ watch(
     const today = new Date().toISOString().split("T")[0] ?? "";
 
     form.dataPagamento = props.payment.dataPagamento ?? today;
+    form.valorFinal = props.payment.valorFinal ?? undefined;
     form.observacao = props.payment.observacao ?? "";
   },
   { immediate: true },
@@ -57,6 +58,7 @@ async function handleSubmit() {
     } else {
       await ajustar(props.payment.id, {
         dataPagamento: form.dataPagamento || null,
+        valorFinal: form.valorFinal ?? null,
         observacao: form.observacao || null,
       });
     }
@@ -93,7 +95,7 @@ async function handleSubmit() {
             </h3>
             <p class="text-sm text-gray-500">
               {{ payment?.socioNome }} • {{ payment?.planoNome }} •
-              {{ payment?.competencia }}
+              {{ formatCompetencia(payment?.competencia) }}
             </p>
           </div>
         </template>
@@ -104,15 +106,29 @@ async function handleSubmit() {
               <UInput v-model="form.dataPagamento" type="date" />
             </UFormField>
 
-            <UFormField label="Valor">
+            <UFormField :label="isQuitar ? 'Valor' : 'Valor final'">
               <UInput
-                :model-value="
-                  payment?.valorFinal ? `R$ ${payment.valorFinal}` : '-'
-                "
+                v-if="isQuitar"
+                :model-value="formatCurrency(payment?.valorFinal)"
                 disabled
+              />
+
+              <UInput
+                v-else
+                v-model="form.valorFinal"
+                type="number"
+                step="0.01"
+                placeholder="0,00"
               />
             </UFormField>
           </div>
+
+          <UFormField v-if="!isQuitar" label="Valor do plano">
+            <UInput
+              :model-value="formatCurrency(payment?.valorBase)"
+              disabled
+            />
+          </UFormField>
 
           <UFormField label="Observação">
             <UTextarea v-model="form.observacao" />
@@ -124,6 +140,7 @@ async function handleSubmit() {
               variant="soft"
               label="Cancelar"
               @click="closeModal"
+              class="cursor-pointer"
             />
 
             <UButton
@@ -131,6 +148,7 @@ async function handleSubmit() {
               :label="isQuitar ? 'Quitar' : 'Salvar ajuste'"
               :icon="isQuitar ? 'i-lucide-badge-check' : 'i-lucide-pencil'"
               @click="handleSubmit"
+              class="cursor-pointer"
             />
           </div>
         </div>
