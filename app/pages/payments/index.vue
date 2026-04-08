@@ -185,6 +185,9 @@ onMounted(async () => {
               :loading="loadingClubs"
               placeholder="Selecione o clube"
               class="cursor-pointer"
+              :ui="{
+                item: 'cursor-pointer',
+              }"
             />
           </UFormField>
 
@@ -196,6 +199,9 @@ onMounted(async () => {
               placeholder="Todos os planos"
               :disabled="!filters.clubeId"
               class="cursor-pointer"
+              :ui="{
+                item: 'cursor-pointer',
+              }"
             />
           </UFormField>
 
@@ -209,6 +215,9 @@ onMounted(async () => {
               :items="statusOptions"
               placeholder="Todos os status"
               class="cursor-pointer"
+              :ui="{
+                item: 'cursor-pointer',
+              }"
             />
           </UFormField>
 

@@ -142,6 +142,7 @@ const columns = [
                 label: "Editar",
                 icon: "i-lucide-pencil",
                 onSelect: () => editarClube(clube),
+                class: "cursor-pointer",
               },
             ],
           ],
@@ -210,6 +211,13 @@ watch(openModal, (value) => {
         v-model:page="page"
         :items-per-page="pageCount"
         :total="filteredClubes.length"
+        :ui="{
+          item: 'cursor-pointer',
+          prev: 'cursor-pointer',
+          next: 'cursor-pointer',
+          first: 'cursor-pointer',
+          last: 'cursor-pointer',
+        }"
       />
     </div>
   </UCard>

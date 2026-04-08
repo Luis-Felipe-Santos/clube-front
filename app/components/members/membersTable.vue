@@ -513,6 +513,9 @@ watch([sortBy, sortDirection], () => {
             option-attribute="label"
             placeholder="Selecione o clube"
             class="cursor-pointer"
+            :ui="{
+              item: 'cursor-pointer',
+            }"
           />
         </div>
 
@@ -524,6 +527,9 @@ watch([sortBy, sortDirection], () => {
             option-attribute="label"
             placeholder="Ordenar por"
             class="cursor-pointer"
+            :ui="{
+              item: 'cursor-pointer',
+            }"
           />
         </div>
       </div>
@@ -555,6 +561,13 @@ watch([sortBy, sortDirection], () => {
         v-model:page="page"
         :items-per-page="pageCount"
         :total="sortedMembers.length"
+        :ui="{
+          item: 'cursor-pointer',
+          prev: 'cursor-pointer',
+          next: 'cursor-pointer',
+          first: 'cursor-pointer',
+          last: 'cursor-pointer',
+        }"
       />
     </div>
   </UCard>

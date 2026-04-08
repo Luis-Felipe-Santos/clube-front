@@ -246,11 +246,13 @@ const columns = [
                 label: "Editar",
                 icon: "i-lucide-pencil",
                 onSelect: () => editarPlano(plano),
+                class: "cursor-pointer",
               },
               {
                 label: "Deletar",
                 icon: "i-material-symbols:delete-outline",
                 onSelect: () => deletarPlano(plano),
+                class: "cursor-pointer",
               },
             ],
           ],
@@ -261,6 +263,7 @@ const columns = [
               icon: "i-lucide-ellipsis-vertical",
               color: "neutral",
               variant: "ghost",
+              class: "cursor-pointer",
             }),
         },
       );
@@ -310,12 +313,21 @@ watch(openModal, (value) => {
             value-key="value"
             option-attribute="label"
             placeholder="Selecione o clube"
+            class="cursor-pointer"
+            :ui="{
+              item: 'cursor-pointer',
+            }"
           />
         </div>
       </div>
 
       <div class="flex justify-end">
-        <UButton label="Novo plano" icon="i-lucide-plus" @click="novoPlano" />
+        <UButton
+          label="Novo plano"
+          icon="i-lucide-plus"
+          @click="novoPlano"
+          class="cursor-pointer"
+        />
       </div>
     </div>
 
@@ -335,6 +347,13 @@ watch(openModal, (value) => {
         v-model:page="page"
         :items-per-page="pageCount"
         :total="filteredPlanos.length"
+        :ui="{
+          item: 'cursor-pointer',
+          prev: 'cursor-pointer',
+          next: 'cursor-pointer',
+          first: 'cursor-pointer',
+          last: 'cursor-pointer',
+        }"
       />
     </div>
   </UCard>
