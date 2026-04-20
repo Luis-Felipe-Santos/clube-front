@@ -38,7 +38,7 @@ const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
-const { get, patch } = useApi();
+const { get, patch } = useCachedApi();
 
 const members = ref<Member[]>([]);
 const clubs = ref<ClubOption[]>([]);

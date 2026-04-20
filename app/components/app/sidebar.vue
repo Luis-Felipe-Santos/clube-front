@@ -28,7 +28,17 @@ const items: NavigationMenuItem[][] = [
     {
       label: "Mensalidades",
       icon: "i-lucide-credit-card",
-      to: "/payments",
+      defaultOpen: true,
+      children: [
+        {
+          label: "Listagem",
+          to: "/payments",
+        },
+        {
+          label: "Planilha",
+          to: "/payments/planilha",
+        },
+      ],
     },
     {
       label: "Configurações",

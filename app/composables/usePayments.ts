@@ -46,7 +46,9 @@ export interface SocioPlanoOption {
 }
 
 export const usePayments = () => {
-  const { get, post, patch } = useApi()
+  const { get, post, patch } = useCachedApi({
+    ttl: 30000
+  })
 
   const listar = async (params: {
     clubeId: number

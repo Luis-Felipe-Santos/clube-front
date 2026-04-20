@@ -11,7 +11,7 @@ definePageMeta({
 });
 
 const { listar } = usePayments();
-const { get } = useApi();
+const { get } = useCachedApi();
 const toast = useToast();
 
 type SelectOption = {
@@ -50,6 +50,19 @@ const modalMode = ref<"quitar" | "ajustar">("quitar");
 const selectedPayment = ref<PagamentoLista | null>(null);
 
 const openCreateModal = ref(false);
+
+/** PAGINAÇÃO */
+const page = ref(1);
+const pageCount = 10;
+
+const totalItems = computed(() => payments.value.length);
+
+const paginatedPayments = computed(() => {
+  const start = (page.value - 1) * pageCount;
+  const end = start + pageCount;
+
+  return payments.value.slice(start, end);
+});
 
 const statusOptions = [
   { label: "Todos os status", value: "TODOS" },
@@ -111,6 +124,7 @@ async function loadPlansByClub(clubeId: number) {
 async function loadPayments() {
   if (!filters.clubeId) {
     payments.value = [];
+    page.value = 1;
     return;
   }
 
@@ -127,6 +141,8 @@ async function loadPayments() {
       status: filters.status === "TODOS" ? null : filters.status,
       busca: filters.busca || null,
     });
+
+    page.value = 1;
   } catch (error: any) {
     toast.add({
       title: "Erro ao carregar pagamentos",
@@ -155,6 +171,7 @@ watch(
   async (newClubId) => {
     filters.planoId = undefined;
     planOptions.value = [];
+    page.value = 1;
 
     if (!newClubId) return;
 
@@ -249,11 +266,25 @@ onMounted(async () => {
       </UCard>
 
       <PaymentsTable
-        :payments="payments"
+        :payments="paginatedPayments"
         :loading="loading"
         @quitar="openQuitarModal"
         @ajustar="openAjustarModal"
       />
+
+      <div v-if="totalItems > pageCount" class="mt-4 flex justify-end">
+        <UPagination
+          v-model:page="page"
+          :total="totalItems"
+          :items-per-page="pageCount"
+          class="cursor-pointer"
+          :ui="{
+            item: 'cursor-pointer',
+            prev: 'cursor-pointer',
+            next: 'cursor-pointer',
+          }"
+        />
+      </div>
 
       <PaymentsPaymentCreateModal
         v-model:open="openCreateModal"

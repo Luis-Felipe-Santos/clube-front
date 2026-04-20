@@ -1,0 +1,612 @@
+<script setup lang="ts">
+import { parseCompetenciaToApi } from "~/utils/payments";
+import type {
+  PagamentoLista,
+  StatusPagamento,
+} from "~/composables/usePayments";
+
+definePageMeta({
+  layout: "app-layout",
+});
+
+const { listar } = usePayments();
+const { get } = useCachedApi();
+const toast = useToast();
+
+type SelectOption = {
+  label: string;
+  value: number | string;
+};
+
+type ClubeOptionResponse = {
+  id: number;
+  nome: string;
+};
+
+type PlanoOptionResponse = {
+  id: number;
+  nome: string;
+};
+
+type GridPaymentCell = {
+  id?: number;
+  socioId: number;
+  socioNome: string;
+  planoNome?: string | null;
+  competencia: string;
+  valorFinal: number;
+  status: StatusPagamento;
+  dataPagamento?: string | null;
+  pagamentoOriginal?: PagamentoLista;
+};
+
+type GridRow = {
+  socioId: number;
+  socioNome: string;
+  planoNome?: string | null;
+  pagamentos: Record<string, GridPaymentCell>;
+};
+
+const loading = ref(false);
+const loadingClubs = ref(false);
+const loadingPlans = ref(false);
+
+const payments = ref<PagamentoLista[]>([]);
+const clubOptions = ref<SelectOption[]>([]);
+const planOptions = ref<SelectOption[]>([]);
+
+const filters = reactive({
+  clubeId: undefined as number | undefined,
+  planoId: undefined as number | string | undefined,
+  ano: String(new Date().getFullYear()),
+  busca: "",
+});
+
+const openModal = ref(false);
+const modalMode = ref<"quitar" | "ajustar">("quitar");
+const selectedPayment = ref<PagamentoLista | null>(null);
+
+const openCreateModal = ref(false);
+
+const page = ref(1);
+const pageCount = 10;
+
+async function loadClubs() {
+  try {
+    loadingClubs.value = true;
+    const response = await get<ClubeOptionResponse[]>("/clubes");
+
+    clubOptions.value = response.map((club) => ({
+      label: club.nome,
+      value: club.id,
+    }));
+  } catch (error: any) {
+    toast.add({
+      title: "Erro ao carregar clubes",
+      description:
+        error?.data?.message || "Não foi possível carregar os clubes.",
+      color: "error",
+    });
+  } finally {
+    loadingClubs.value = false;
+  }
+}
+
+async function loadPlansByClub(clubeId: number) {
+  try {
+    loadingPlans.value = true;
+
+    const response = await get<PlanoOptionResponse[]>(
+      `/planos?clubeId=${clubeId}`,
+    );
+
+    planOptions.value = [
+      { label: "Todos os planos", value: "TODOS" },
+      ...response.map((plan) => ({
+        label: plan.nome,
+        value: plan.id,
+      })),
+    ];
+  } catch (error: any) {
+    planOptions.value = [{ label: "Todos os planos", value: "TODOS" }];
+
+    toast.add({
+      title: "Erro ao carregar planos",
+      description:
+        error?.data?.message || "Não foi possível carregar os planos.",
+      color: "error",
+    });
+  } finally {
+    loadingPlans.value = false;
+  }
+}
+
+function normalizeCompetenciaToGrid(value?: string | null) {
+  if (!value) return "";
+
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  if (/^\d{2}\/\d{4}$/.test(value)) {
+    const [mes, ano] = value.split("/");
+    return `${ano}-${mes}`;
+  }
+
+  return value;
+}
+
+function extractSocioId(payment: any) {
+  return (
+    payment?.socioId ??
+    payment?.socio?.id ??
+    payment?.socio_plano?.socio?.id ??
+    payment?.socioPlano?.socio?.id ??
+    payment?.socioPlanoId ??
+    payment?.id
+  );
+}
+
+function extractSocioNome(payment: any) {
+  return (
+    payment?.socioNome ??
+    payment?.nomeSocio ??
+    payment?.socio?.nome ??
+    payment?.socio_plano?.socio?.nome ??
+    payment?.socioPlano?.socio?.nome ??
+    "Sócio"
+  );
+}
+
+function extractPlanoNome(payment: any) {
+  return (
+    payment?.planoNome ??
+    payment?.nomePlano ??
+    payment?.plano?.nome ??
+    payment?.socio_plano?.plano?.nome ??
+    payment?.socioPlano?.plano?.nome ??
+    "-"
+  );
+}
+
+const meses = computed(() => {
+  const ano = Number(filters.ano) || new Date().getFullYear();
+
+  return Array.from({ length: 12 }, (_, index) => {
+    const mes = String(index + 1).padStart(2, "0");
+    return `${ano}-${mes}`;
+  });
+});
+
+const grid = computed<GridRow[]>(() => {
+  const map = new Map<number, GridRow>();
+
+  for (const payment of payments.value) {
+    const socioId = extractSocioId(payment);
+    const socioNome = extractSocioNome(payment);
+    const planoNome = extractPlanoNome(payment);
+    const competencia = normalizeCompetenciaToGrid(payment.competencia);
+
+    if (!competencia || !meses.value.includes(competencia)) continue;
+
+    if (!map.has(socioId)) {
+      map.set(socioId, {
+        socioId,
+        socioNome,
+        planoNome,
+        pagamentos: {},
+      });
+    }
+
+    map.get(socioId)!.pagamentos[competencia] = {
+      id: payment.id,
+      socioId,
+      socioNome,
+      planoNome,
+      competencia,
+      valorFinal: Number(payment.valorFinal ?? 0),
+      status: payment.status,
+      dataPagamento: payment.dataPagamento ?? null,
+      pagamentoOriginal: payment,
+    };
+  }
+
+  return Array.from(map.values()).sort((a, b) =>
+    a.socioNome.localeCompare(b.socioNome, "pt-BR"),
+  );
+});
+
+const totalRows = computed(() => grid.value.length);
+
+const paginatedGrid = computed<GridRow[]>(() => {
+  const start = (page.value - 1) * pageCount;
+  const end = start + pageCount;
+
+  return grid.value.slice(start, end);
+});
+
+async function loadGrid() {
+  if (!filters.clubeId) {
+    payments.value = [];
+    page.value = 1;
+    return;
+  }
+
+  try {
+    loading.value = true;
+
+    payments.value = await listar({
+      clubeId: filters.clubeId,
+      planoId:
+        filters.planoId && filters.planoId !== "TODOS"
+          ? Number(filters.planoId)
+          : null,
+      competencia: null,
+      status: null,
+      busca: filters.busca || null,
+    });
+
+    page.value = 1;
+  } catch (error: any) {
+    toast.add({
+      title: "Erro ao carregar planilha",
+      description: error?.data?.message || "Tente novamente.",
+      color: "error",
+    });
+  } finally {
+    loading.value = false;
+  }
+}
+
+function formatMes(competencia: string) {
+  const monthMap = [
+    "JAN",
+    "FEV",
+    "MAR",
+    "ABR",
+    "MAI",
+    "JUN",
+    "JUL",
+    "AGO",
+    "SET",
+    "OUT",
+    "NOV",
+    "DEZ",
+  ];
+
+  const [, month] = competencia.split("-");
+  return monthMap[Number(month) - 1] ?? competencia;
+}
+
+function formatCurrency(value?: number | null) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value ?? 0));
+}
+
+function getCellClass(status?: StatusPagamento) {
+  if (!status) {
+    return "bg-gray-50 text-gray-400 hover:bg-gray-100";
+  }
+
+  return {
+    "bg-green-500/15 text-green-700 hover:bg-green-500/20": status === "PAGO",
+    "bg-yellow-500/15 text-yellow-700 hover:bg-yellow-500/20":
+      status === "PENDENTE",
+    "bg-red-500/15 text-red-700 hover:bg-red-500/20": status === "ATRASADO",
+  };
+}
+
+function handleCellClick(row: GridRow, mes: string) {
+  const payment = row.pagamentos[mes]?.pagamentoOriginal;
+
+  if (!payment) {
+    toast.add({
+      title: "Pagamento não encontrado",
+      description:
+        "Para criar um pagamento nessa competência, use o botão Novo pagamento.",
+      color: "warning",
+    });
+    return;
+  }
+
+  selectedPayment.value = payment;
+
+  if (payment.status === "PENDENTE" || payment.status === "ATRASADO") {
+    modalMode.value = "quitar";
+  } else {
+    modalMode.value = "ajustar";
+  }
+
+  openModal.value = true;
+}
+
+function getRowTotal(row: GridRow) {
+  return meses.value.reduce((total, mes) => {
+    return total + Number(row.pagamentos[mes]?.valorFinal ?? 0);
+  }, 0);
+}
+
+watch(
+  () => filters.clubeId,
+  async (newClubId) => {
+    filters.planoId = undefined;
+    payments.value = [];
+    planOptions.value = [];
+    page.value = 1;
+
+    if (!newClubId) return;
+
+    await loadPlansByClub(newClubId);
+    await loadGrid();
+  },
+);
+
+watch(
+  () => [filters.planoId, filters.ano, filters.busca],
+  () => {
+    page.value = 1;
+  },
+);
+
+watch(totalRows, () => {
+  const maxPage = Math.max(1, Math.ceil(totalRows.value / pageCount));
+
+  if (page.value > maxPage) {
+    page.value = maxPage;
+  }
+});
+
+watch(
+  () => filters.ano,
+  () => {
+    // aqui só muda as colunas do grid
+  },
+);
+
+onMounted(async () => {
+  await loadClubs();
+});
+</script>
+
+<template>
+  <UPage>
+    <UPageHeader
+      title="Planilha de mensalidades"
+      description="Visualize os pagamentos dos sócios em formato de planilha."
+    />
+
+    <UPageBody>
+      <UCard class="mb-4">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <UFormField label="Clube">
+            <USelect
+              v-model="filters.clubeId"
+              :items="clubOptions"
+              :loading="loadingClubs"
+              placeholder="Selecione o clube"
+              class="cursor-pointer"
+              :ui="{
+                item: 'cursor-pointer',
+              }"
+            />
+          </UFormField>
+
+          <UFormField label="Plano">
+            <USelect
+              v-model="filters.planoId"
+              :items="planOptions"
+              :loading="loadingPlans"
+              placeholder="Todos os planos"
+              :disabled="!filters.clubeId"
+              class="cursor-pointer"
+              :ui="{
+                item: 'cursor-pointer',
+              }"
+            />
+          </UFormField>
+
+          <UFormField label="Ano">
+            <UInput v-model="filters.ano" placeholder="2026" />
+          </UFormField>
+
+          <UFormField label="Busca">
+            <UInput
+              v-model="filters.busca"
+              icon="i-lucide-search"
+              placeholder="Nome do sócio"
+            />
+          </UFormField>
+
+          <div class="flex items-end">
+            <UButton
+              icon="i-lucide-search"
+              label="Buscar"
+              @click="loadGrid"
+              class="w-full cursor-pointer"
+            />
+          </div>
+        </div>
+
+        <div class="mt-4 flex justify-between">
+          <UButton
+            icon="i-lucide-plus"
+            label="Novo pagamento"
+            :disabled="!filters.clubeId"
+            @click="openCreateModal = true"
+            class="cursor-pointer"
+          />
+
+          <UButton
+            to="/payments"
+            icon="i-lucide-list"
+            label="Ver listagem"
+            variant="soft"
+            class="cursor-pointer"
+          />
+        </div>
+      </UCard>
+
+      <UCard>
+        <div class="relative overflow-auto">
+          <table
+            class="min-w-[1650px] w-full border-separate border-spacing-0 text-sm"
+          >
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="sticky left-0 z-30 min-w-[320px] border-b border-r bg-gray-50 px-4 py-3 text-left font-semibold"
+                >
+                  Sócio
+                </th>
+
+                <th
+                  class="sticky left-[320px] z-30 min-w-[220px] border-b border-r bg-gray-50 px-4 py-3 text-left font-semibold"
+                >
+                  Plano
+                </th>
+
+                <th
+                  v-for="mes in meses"
+                  :key="mes"
+                  class="min-w-[110px] border-b border-r bg-gray-50 px-3 py-3 text-center font-semibold"
+                >
+                  {{ formatMes(mes) }}
+                </th>
+
+                <th
+                  class="min-w-[140px] border-b bg-gray-50 px-4 py-3 text-center font-semibold"
+                >
+                  Total
+                </th>
+              </tr>
+            </thead>
+
+            <tbody v-if="!loading && paginatedGrid.length">
+              <tr
+                v-for="(row, index) in paginatedGrid"
+                :key="row.socioId"
+                :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'"
+              >
+                <td
+                  class="sticky left-0 z-20 border-b border-r px-4 py-3 font-medium"
+                  :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'"
+                >
+                  {{ row.socioNome }}
+                </td>
+
+                <td
+                  class="sticky left-[320px] z-20 border-b border-r px-4 py-3 text-gray-600"
+                  :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'"
+                >
+                  {{ row.planoNome || "-" }}
+                </td>
+
+                <td
+                  v-for="mes in meses"
+                  :key="`${row.socioId}-${mes}`"
+                  class="border-b border-r p-1"
+                >
+                  <button
+                    type="button"
+                    class="flex h-[42px] w-full cursor-pointer items-center justify-center rounded-md px-2 text-center text-xs font-medium transition"
+                    :class="getCellClass(row.pagamentos[mes]?.status)"
+                    @click="handleCellClick(row, mes)"
+                  >
+                    <template v-if="row.pagamentos[mes]">
+                      {{ formatCurrency(row.pagamentos[mes].valorFinal) }}
+                    </template>
+
+                    <template v-else> — </template>
+                  </button>
+                </td>
+
+                <td class="border-b px-4 py-3 text-center font-semibold">
+                  {{ formatCurrency(getRowTotal(row)) }}
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody v-else-if="loading">
+              <tr>
+                <td
+                  :colspan="meses.length + 3"
+                  class="py-10 text-center text-sm text-gray-500"
+                >
+                  Carregando planilha...
+                </td>
+              </tr>
+            </tbody>
+
+            <tbody v-else>
+              <tr>
+                <td
+                  :colspan="meses.length + 3"
+                  class="py-10 text-center text-sm text-gray-500"
+                >
+                  Nenhum dado encontrado.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div
+          v-if="!loading && totalRows > 0"
+          class="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="text-sm text-gray-500">
+            Mostrando
+            <span class="font-medium text-gray-900">
+              {{ (page - 1) * pageCount + 1 }}
+            </span>
+            até
+            <span class="font-medium text-gray-900">
+              {{ Math.min(page * pageCount, totalRows) }}
+            </span>
+            de
+            <span class="font-medium text-gray-900">
+              {{ totalRows }}
+            </span>
+            sócios
+          </div>
+
+          <UPagination
+            v-model:page="page"
+            :total="totalRows"
+            :items-per-page="pageCount"
+            show-first
+            show-last
+            class="cursor-pointer"
+            :ui="{
+              item: 'cursor-pointer',
+              first: 'cursor-pointer',
+              last: 'cursor-pointer',
+              prev: 'cursor-pointer',
+              next: 'cursor-pointer',
+            }"
+          />
+        </div>
+      </UCard>
+
+      <PaymentsPaymentCreateModal
+        v-model:open="openCreateModal"
+        :clube-id="filters.clubeId ?? null"
+        :plano-id="
+          filters.planoId && filters.planoId !== 'TODOS'
+            ? Number(filters.planoId)
+            : null
+        "
+        @success="loadGrid"
+      />
+
+      <PaymentsPaymentFormModal
+        v-model:open="openModal"
+        :payment="selectedPayment"
+        :mode="modalMode"
+        @success="loadGrid"
+      />
+    </UPageBody>
+  </UPage>
+</template>

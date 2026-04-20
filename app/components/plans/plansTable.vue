@@ -24,7 +24,7 @@ const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
-const { get, del } = useApi();
+const { get, del } = useCachedApi();
 
 const openModal = ref(false);
 const loading = ref(false);

@@ -63,7 +63,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
-const { get, post, patch, put } = useApi();
+const { get, post, patch, put } = useCachedApi();
 const loading = ref(false);
 
 const selectedFile = ref<File | null>(null);

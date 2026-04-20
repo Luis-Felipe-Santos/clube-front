@@ -51,10 +51,16 @@ watch(
 
       const response = await listarSocioPlanos(props.clubeId, props.planoId);
 
-      socioPlanoOptions.value = response.map((item: SocioPlanoOption) => ({
-        label: `${item.socioNome} - ${item.planoNome}`,
-        value: item.id,
-      }));
+      socioPlanoOptions.value = response
+        .sort((a: SocioPlanoOption, b: SocioPlanoOption) =>
+          a.socioNome.localeCompare(b.socioNome, "pt-BR", {
+            sensitivity: "base",
+          }),
+        )
+        .map((item: SocioPlanoOption) => ({
+          label: `${item.socioNome} - ${item.planoNome}`,
+          value: item.id,
+        }));
     } catch (error: any) {
       socioPlanoOptions.value = [];
 

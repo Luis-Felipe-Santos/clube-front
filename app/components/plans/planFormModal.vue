@@ -28,7 +28,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const loading = ref(false);
-const { post, put } = useApi();
+const { post, put } = useCachedApi();
 
 const isEditing = computed(() => !!props.plano?.id);
 

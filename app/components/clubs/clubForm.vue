@@ -13,7 +13,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 const loading = ref(false);
-const { post } = useApi();
+const { post } = useCachedApi();
 
 const schema = z.object({
   nome: z.string().min(3, "Informe o nome do clube"),

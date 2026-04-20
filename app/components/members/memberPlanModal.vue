@@ -24,7 +24,7 @@ const emit = defineEmits<{
 }>();
 
 const toast = useToast();
-const { get, post } = useApi();
+const { get, post } = useCachedApi();
 
 const loading = ref(false);
 const planosLoading = ref(false);
