@@ -16,6 +16,18 @@ const { get } = useCachedApi();
 const toast = useToast();
 const { exportToExcel, exportToPdf } = useExport();
 
+const clubs = ref<ClubeOptionResponse[]>([]);
+
+const filters = reactive({
+  clubeId: undefined as number | undefined,
+  planoId: undefined as number | string | undefined,
+  competencia: "" as string,
+  status: "TODOS" as "TODOS" | StatusPagamento,
+  busca: "",
+});
+
+const { ensureActiveClubSelected } = useActiveClubSelection(filters, clubs);
+
 type SelectOption = {
   label: string;
   value: number | string;
@@ -24,6 +36,7 @@ type SelectOption = {
 type ClubeOptionResponse = {
   id: number;
   nome: string;
+  status?: string;
 };
 
 type PlanoOptionResponse = {
@@ -36,16 +49,13 @@ const loadingClubs = ref(false);
 const loadingPlans = ref(false);
 
 const payments = ref<PagamentoLista[]>([]);
-const clubOptions = ref<SelectOption[]>([]);
+const clubOptions = computed(() =>
+  clubs.value.map((club) => ({
+    label: club.nome,
+    value: club.id,
+  })),
+);
 const planOptions = ref<SelectOption[]>([]);
-
-const filters = reactive({
-  clubeId: undefined as number | undefined,
-  planoId: undefined as number | string | undefined,
-  competencia: "" as string,
-  status: "TODOS" as "TODOS" | StatusPagamento,
-  busca: "",
-});
 
 const openModal = ref(false);
 const modalMode = ref<"quitar" | "ajustar">("quitar");
@@ -125,10 +135,8 @@ async function loadClubs() {
     loadingClubs.value = true;
     const response = await get<ClubeOptionResponse[]>("/clubes");
 
-    clubOptions.value = response.map((club) => ({
-      label: club.nome,
-      value: club.id,
-    }));
+    clubs.value = response;
+    ensureActiveClubSelected();
   } catch (error: any) {
     toast.add({
       title: "Erro ao carregar clubes",

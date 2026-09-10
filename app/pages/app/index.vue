@@ -3,6 +3,7 @@ import type { PagamentoLista } from "~/composables/usePayments";
 
 definePageMeta({
   layout: "app-layout",
+  title: "Dashboard",
   middleware: "auth",
 });
 
@@ -40,7 +41,7 @@ const summaryCards = computed(() => [
     title: "Clubes",
     value: totalClubes.value,
     description: "cadastros ativos",
-    icon: "i-lucide-building2",
+    icon: "i-lucide-building-2",
     color: "primary",
   },
   {
@@ -190,7 +191,7 @@ onMounted(() => {
             color="neutral"
             variant="soft"
             class="w-full justify-start"
-            icon="i-lucide-building2"
+            icon="i-lucide-building-2"
           >
             Ver clubes
           </UButton>

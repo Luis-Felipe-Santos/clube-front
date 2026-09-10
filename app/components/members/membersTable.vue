@@ -28,6 +28,7 @@ type Member = {
 type ClubOption = {
   id: number;
   nome: string;
+  status?: string;
 };
 
 type SortField = "nome" | "planoNome" | "status" | "statusPlano";
@@ -45,6 +46,10 @@ const { exportToExcel, exportToPdf } = useExport();
 const members = ref<Member[]>([]);
 const clubs = ref<ClubOption[]>([]);
 const selectedClubId = ref<number | undefined>(undefined);
+const { ensureActiveClubSelected } = useActiveClubSelection(
+  selectedClubId,
+  clubs,
+);
 
 const search = ref("");
 const loading = ref(false);
@@ -140,18 +145,7 @@ function getStatusColor(status?: string) {
   }
 }
 
-function getPlanStatusColor(status?: string) {
-  switch (status) {
-    case "ATIVO":
-      return "success";
-    case "SUSPENSO":
-      return "warning";
-    case "CANCELADO":
-      return "neutral";
-    default:
-      return "neutral";
-  }
-}
+
 
 function openImagePreview(image?: string, name?: string) {
   if (!image) return;
@@ -165,12 +159,7 @@ async function fetchClubs() {
   try {
     const response = (await get<ClubOption[]>("/clubes")) || [];
     clubs.value = response;
-
-    const firstClub = response[0];
-
-    if (!selectedClubId.value && firstClub) {
-      selectedClubId.value = firstClub.id;
-    }
+    ensureActiveClubSelected();
   } catch (error) {
     toast.add({
       title: "Erro ao carregar clubes",
@@ -440,27 +429,10 @@ const columns = [
       return member.planoNome || "Sem plano";
     },
   },
-  {
-    accessorKey: "statusPlano",
-    header: "Status do plano",
-    cell: ({ row }: any) => {
-      const statusPlano = row.original.statusPlano;
-
-      if (!statusPlano) return "N/A";
-
-      return h(
-        UBadge,
-        {
-          color: getPlanStatusColor(statusPlano),
-          variant: "subtle",
-        },
-        () => statusPlano,
-      );
-    },
-  },
+ 
   {
     accessorKey: "status",
-    header: "Status do sócio",
+    header: "Status",
     cell: ({ row }: any) => {
       const status = row.original.status || "ATIVO";
 

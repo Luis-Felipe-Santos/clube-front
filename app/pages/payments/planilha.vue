@@ -15,6 +15,17 @@ const { get } = useCachedApi();
 const toast = useToast();
 const { exportToExcel, exportToPdf } = useExport();
 
+const clubs = ref<ClubeOptionResponse[]>([]);
+
+const filters = reactive({
+  clubeId: undefined as number | undefined,
+  planoId: undefined as number | string | undefined,
+  ano: String(new Date().getFullYear()),
+  busca: "",
+});
+
+const { ensureActiveClubSelected } = useActiveClubSelection(filters, clubs);
+
 type SelectOption = {
   label: string;
   value: number | string;
@@ -23,6 +34,7 @@ type SelectOption = {
 type ClubeOptionResponse = {
   id: number;
   nome: string;
+  status?: string;
 };
 
 type PlanoOptionResponse = {
@@ -54,15 +66,13 @@ const loadingClubs = ref(false);
 const loadingPlans = ref(false);
 
 const payments = ref<PagamentoLista[]>([]);
-const clubOptions = ref<SelectOption[]>([]);
+const clubOptions = computed(() =>
+  clubs.value.map((club) => ({
+    label: club.nome,
+    value: club.id,
+  })),
+);
 const planOptions = ref<SelectOption[]>([]);
-
-const filters = reactive({
-  clubeId: undefined as number | undefined,
-  planoId: undefined as number | string | undefined,
-  ano: String(new Date().getFullYear()),
-  busca: "",
-});
 
 const openModal = ref(false);
 const modalMode = ref<"quitar" | "ajustar">("quitar");
@@ -78,10 +88,8 @@ async function loadClubs() {
     loadingClubs.value = true;
     const response = await get<ClubeOptionResponse[]>("/clubes");
 
-    clubOptions.value = response.map((club) => ({
-      label: club.nome,
-      value: club.id,
-    }));
+    clubs.value = response;
+    ensureActiveClubSelected();
   } catch (error: any) {
     toast.add({
       title: "Erro ao carregar clubes",
@@ -289,14 +297,16 @@ function formatCurrency(value?: number | null) {
 
 function getCellClass(status?: StatusPagamento) {
   if (!status) {
-    return "bg-gray-50 text-gray-400 hover:bg-gray-100";
+    return "bg-gray-50 text-gray-400 hover:bg-gray-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700";
   }
 
   return {
-    "bg-green-500/15 text-green-700 hover:bg-green-500/20": status === "PAGO",
-    "bg-yellow-500/15 text-yellow-700 hover:bg-yellow-500/20":
+    "bg-green-500/15 text-green-700 hover:bg-green-500/20 dark:bg-green-500/20 dark:text-green-300 dark:hover:bg-green-500/30":
+      status === "PAGO",
+    "bg-yellow-500/15 text-yellow-700 hover:bg-yellow-500/20 dark:bg-yellow-500/20 dark:text-yellow-200 dark:hover:bg-yellow-500/30":
       status === "PENDENTE",
-    "bg-red-500/15 text-red-700 hover:bg-red-500/20": status === "ATRASADO",
+    "bg-red-500/15 text-red-700 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-200 dark:hover:bg-red-500/30":
+      status === "ATRASADO",
   };
 }
 
@@ -526,16 +536,16 @@ onMounted(async () => {
           <table
             class="min-w-[1650px] w-full border-separate border-spacing-0 text-sm"
           >
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 dark:bg-slate-800">
               <tr>
                 <th
-                  class="sticky left-0 z-30 min-w-[320px] border-b border-r bg-gray-50 px-4 py-3 text-left font-semibold"
+                  class="min-w-[320px] border-b border-r border-gray-200 bg-gray-50 px-4 py-3 text-left font-semibold text-gray-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 >
                   Sócio
                 </th>
 
                 <th
-                  class="sticky left-[320px] z-30 min-w-[220px] border-b border-r bg-gray-50 px-4 py-3 text-left font-semibold"
+                  class="min-w-[220px] border-b border-r border-gray-200 bg-gray-50 px-4 py-3 text-left font-semibold text-gray-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 >
                   Plano
                 </th>
@@ -543,13 +553,13 @@ onMounted(async () => {
                 <th
                   v-for="mes in meses"
                   :key="mes"
-                  class="min-w-[110px] border-b border-r bg-gray-50 px-3 py-3 text-center font-semibold"
+                  class="min-w-[110px] border-b border-r border-gray-200 bg-gray-50 px-3 py-3 text-center font-semibold text-gray-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 >
                   {{ formatMes(mes) }}
                 </th>
 
                 <th
-                  class="min-w-[140px] border-b bg-gray-50 px-4 py-3 text-center font-semibold"
+                  class="min-w-[140px] border-b border-gray-200 bg-gray-50 px-4 py-3 text-center font-semibold text-gray-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 >
                   Total
                 </th>
@@ -560,18 +570,18 @@ onMounted(async () => {
               <tr
                 v-for="(row, index) in paginatedGrid"
                 :key="row.socioId"
-                :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'"
+                :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
               >
                 <td
-                  class="sticky left-0 z-20 border-b border-r px-4 py-3 font-medium"
-                  :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'"
+                  class="border-b border-r border-gray-200 px-4 py-3 font-medium text-gray-900 dark:border-slate-700 dark:text-slate-100"
+                  :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
                 >
                   {{ row.socioNome }}
                 </td>
 
                 <td
-                  class="sticky left-[320px] z-20 border-b border-r px-4 py-3 text-gray-600"
-                  :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/40'"
+                  class="border-b border-r border-gray-200 px-4 py-3 text-gray-600 dark:border-slate-700 dark:text-slate-300"
+                  :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
                 >
                   {{ row.planoNome || "-" }}
                 </td>
@@ -579,7 +589,7 @@ onMounted(async () => {
                 <td
                   v-for="mes in meses"
                   :key="`${row.socioId}-${mes}`"
-                  class="border-b border-r p-1"
+                  class="border-b border-r border-gray-200 p-1 dark:border-slate-700"
                 >
                   <button
                     type="button"
@@ -595,7 +605,10 @@ onMounted(async () => {
                   </button>
                 </td>
 
-                <td class="border-b px-4 py-3 text-center font-semibold">
+                <td
+                  class="border-b border-gray-200 px-4 py-3 text-center font-semibold text-gray-900 dark:border-slate-700 dark:text-slate-100"
+                  :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
+                >
                   {{ formatCurrency(getRowTotal(row)) }}
                 </td>
               </tr>
@@ -605,7 +618,7 @@ onMounted(async () => {
               <tr>
                 <td
                   :colspan="meses.length + 3"
-                  class="py-10 text-center text-sm text-gray-500"
+                  class="py-10 text-center text-sm text-gray-500 dark:text-slate-300"
                 >
                   Carregando planilha...
                 </td>
@@ -616,7 +629,7 @@ onMounted(async () => {
               <tr>
                 <td
                   :colspan="meses.length + 3"
-                  class="py-10 text-center text-sm text-gray-500"
+                  class="py-10 text-center text-sm text-gray-500 dark:text-slate-300"
                 >
                   Nenhum dado encontrado.
                 </td>
@@ -627,19 +640,19 @@ onMounted(async () => {
 
         <div
           v-if="!loading && totalRows > 0"
-          class="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 md:flex-row md:items-center md:justify-between"
+          class="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 md:flex-row md:items-center md:justify-between dark:border-slate-700"
         >
-          <div class="text-sm text-gray-500">
+          <div class="text-sm text-gray-500 dark:text-slate-300">
             Mostrando
-            <span class="font-medium text-gray-900">
+            <span class="font-medium text-gray-900 dark:text-slate-100">
               {{ (page - 1) * pageCount + 1 }}
             </span>
             até
-            <span class="font-medium text-gray-900">
+            <span class="font-medium text-gray-900 dark:text-slate-100">
               {{ Math.min(page * pageCount, totalRows) }}
             </span>
             de
-            <span class="font-medium text-gray-900">
+            <span class="font-medium text-gray-900 dark:text-slate-100">
               {{ totalRows }}
             </span>
             sócios

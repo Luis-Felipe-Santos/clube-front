@@ -15,6 +15,7 @@ type Plano = {
 type ClubeOption = {
   id: number;
   nome: string;
+  status?: string;
 };
 
 const clubes = ref<ClubeOption[]>([]);
@@ -27,6 +28,10 @@ const UDropdownMenu = resolveComponent("UDropdownMenu");
 const toast = useToast();
 const { get, del } = useCachedApi();
 const { exportToExcel, exportToPdf } = useExport();
+const { ensureActiveClubSelected } = useActiveClubSelection(
+  clubeSelecionadoId,
+  clubes,
+);
 
 const openModal = ref(false);
 const loading = ref(false);
@@ -94,11 +99,7 @@ async function fetchClubes() {
   try {
     const response = await get<ClubeOption[]>("/clubes");
     clubes.value = response;
-    const primeiroClube = response[0];
-
-    if (!clubeSelecionadoId.value && primeiroClube) {
-      clubeSelecionadoId.value = primeiroClube.id;
-    }
+    ensureActiveClubSelected();
   } catch (error) {
     console.error("Erro ao buscar clubes:", error);
 
