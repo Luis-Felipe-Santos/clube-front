@@ -4,6 +4,7 @@ import MemberFormModal from "~/components/members/memberFormModal.vue";
 import MemberPlanModal from "~/components/members/memberPlanModal.vue";
 import DependentTable from "../dependents/dependentTable.vue";
 import { maskDocument, maskPhone } from "~/utils/masks";
+import { useExport, type ExportColumn } from "~/composables/useExport";
 
 type Member = {
   id: number;
@@ -39,6 +40,7 @@ const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
 const { get, patch } = useCachedApi();
+const { exportToExcel, exportToPdf } = useExport();
 
 const members = ref<Member[]>([]);
 const clubs = ref<ClubOption[]>([]);
@@ -316,6 +318,59 @@ async function handlePlanSuccess() {
   await fetchMembers();
 }
 
+const exportColumns: ExportColumn[] = [
+  { header: "Nome", key: "nome" },
+  {
+    header: "Documento",
+    key: "documento",
+    format: (value, row) =>
+      value
+        ? maskDocument(String(value), String(row.tipoDocumento || "CPF"))
+        : "N/A",
+  },
+  {
+    header: "Telefone",
+    key: "telefone",
+    format: (value) => (value ? maskPhone(String(value)) : "N/A"),
+  },
+  { header: "Email", key: "email", format: (value) => String(value || "N/A") },
+  {
+    header: "Endereço",
+    key: "endereco",
+    format: (value) => String(value || "N/A"),
+  },
+  {
+    header: "Plano",
+    key: "planoNome",
+    format: (value) => String(value || "Sem plano"),
+  },
+  {
+    header: "Status do plano",
+    key: "statusPlano",
+    format: (value) => String(value || "N/A"),
+  },
+  {
+    header: "Status do sócio",
+    key: "status",
+    format: (value) => String(value || "ATIVO"),
+  },
+];
+
+async function baixarMembros(formato: "pdf" | "xlsx") {
+  const rows = sortedMembers.value as Record<string, unknown>[];
+  const filename = `socios-${new Date().toISOString().slice(0, 10)}`;
+
+  if (formato === "pdf") {
+    await exportToPdf(rows, exportColumns, `${filename}.pdf`, {
+      title: "Sócios",
+      landscape: true,
+    });
+    return;
+  }
+
+  await exportToExcel(rows, exportColumns, `${filename}.xlsx`);
+}
+
 const columns = [
   {
     accessorKey: "imagemPreviewUrl",
@@ -535,13 +590,31 @@ watch([sortBy, sortDirection], () => {
       </div>
 
       <div class="flex justify-end">
-        <UButton
-          class="cursor-pointer"
-          label="Novo sócio"
-          icon="i-lucide-plus"
-          color="success"
-          @click="openNewMemberModal"
-        />
+        <div class="flex flex-wrap justify-end gap-2">
+          <UButton
+            label="PDF"
+            icon="i-lucide-file-down"
+            color="neutral"
+            variant="soft"
+            :disabled="loading || sortedMembers.length === 0"
+            @click="baixarMembros('pdf')"
+          />
+          <UButton
+            label="Excel"
+            icon="i-lucide-file-spreadsheet"
+            color="neutral"
+            variant="soft"
+            :disabled="loading || sortedMembers.length === 0"
+            @click="baixarMembros('xlsx')"
+          />
+          <UButton
+            class="cursor-pointer"
+            label="Novo sócio"
+            icon="i-lucide-plus"
+            color="success"
+            @click="openNewMemberModal"
+          />
+        </div>
       </div>
     </div>
 

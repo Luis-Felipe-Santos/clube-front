@@ -5,6 +5,7 @@ import type {
   PagamentoLista,
   StatusPagamento,
 } from "~/composables/usePayments";
+import { useExport, type ExportColumn } from "~/composables/useExport";
 
 definePageMeta({
   layout: "app-layout",
@@ -13,6 +14,7 @@ definePageMeta({
 const { listar } = usePayments();
 const { get } = useCachedApi();
 const toast = useToast();
+const { exportToExcel, exportToPdf } = useExport();
 
 type SelectOption = {
   label: string;
@@ -63,6 +65,53 @@ const paginatedPayments = computed(() => {
 
   return payments.value.slice(start, end);
 });
+
+const exportColumns: ExportColumn[] = [
+  { header: "Sócio", key: "socioNome" },
+  { header: "Plano", key: "planoNome" },
+  {
+    header: "Competência",
+    key: "competencia",
+    format: (value) => formatCompetencia(String(value || "")),
+  },
+  {
+    header: "Valor",
+    key: "valorFinal",
+    format: (value) =>
+      new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(Number(value || 0)),
+  },
+  {
+    header: "Vencimento",
+    key: "dataVencimento",
+    format: (value) =>
+      value ? new Date(String(value)).toLocaleDateString("pt-BR") : "-",
+  },
+  { header: "Status", key: "status" },
+  {
+    header: "Data pagamento",
+    key: "dataPagamento",
+    format: (value) =>
+      value ? new Date(String(value)).toLocaleDateString("pt-BR") : "-",
+  },
+];
+
+async function baixarPagamentos(formato: "pdf" | "xlsx") {
+  const rows = payments.value as Record<string, unknown>[];
+  const filename = `pagamentos-${new Date().toISOString().slice(0, 10)}`;
+
+  if (formato === "pdf") {
+    await exportToPdf(rows, exportColumns, `${filename}.pdf`, {
+      title: "Pagamentos",
+      landscape: true,
+    });
+    return;
+  }
+
+  await exportToExcel(rows, exportColumns, `${filename}.xlsx`);
+}
 
 const statusOptions = [
   { label: "Todos os status", value: "TODOS" },
@@ -256,12 +305,30 @@ onMounted(async () => {
             class="cursor-pointer"
           />
 
-          <UButton
-            icon="i-lucide-search"
-            label="Buscar pagamentos"
-            @click="loadPayments"
-            class="cursor-pointer"
-          />
+          <div class="flex flex-wrap justify-end gap-2">
+            <UButton
+              label="PDF"
+              icon="i-lucide-file-down"
+              color="neutral"
+              variant="soft"
+              :disabled="loading || payments.length === 0"
+              @click="baixarPagamentos('pdf')"
+            />
+            <UButton
+              label="Excel"
+              icon="i-lucide-file-spreadsheet"
+              color="neutral"
+              variant="soft"
+              :disabled="loading || payments.length === 0"
+              @click="baixarPagamentos('xlsx')"
+            />
+            <UButton
+              icon="i-lucide-search"
+              label="Buscar pagamentos"
+              @click="loadPayments"
+              class="cursor-pointer"
+            />
+          </div>
         </div>
       </UCard>
 

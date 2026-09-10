@@ -12,6 +12,7 @@ const pageTitle = computed(() => {
       <template #header>
         <UDashboardNavbar :title="pageTitle">
           <template #right>
+            <UColorModeButton />
             <UTooltip text="Sair">
               <UButton
                 color="neutral"

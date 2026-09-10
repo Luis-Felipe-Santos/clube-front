@@ -2,6 +2,7 @@
 import { h, resolveComponent } from "vue";
 import ClubFormModal from "./clubFormModal.vue";
 import { maskCnpj } from "~/utils/masks";
+import { useExport, type ExportColumn } from "~/composables/useExport";
 
 type Clube = {
   id: number;
@@ -16,6 +17,7 @@ const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
 const { get } = useCachedApi();
+const { exportToExcel, exportToPdf } = useExport();
 
 const openModal = ref(false);
 const loading = ref(false);
@@ -98,6 +100,34 @@ function handleSuccess() {
   openModal.value = false;
   selectedClube.value = null;
   fetchClubes();
+}
+
+const exportColumns: ExportColumn[] = [
+  { header: "Nome", key: "nome" },
+  {
+    header: "CNPJ",
+    key: "cnpj",
+    format: (value) => (value ? maskCnpj(String(value)) : "N/A"),
+  },
+  {
+    header: "Status",
+    key: "status",
+    format: (value) => String(value || "N/A"),
+  },
+];
+
+async function baixarClubes(formato: "pdf" | "xlsx") {
+  const rows = filteredClubes.value as Record<string, unknown>[];
+  const filename = `clubes-${new Date().toISOString().slice(0, 10)}`;
+
+  if (formato === "pdf") {
+    await exportToPdf(rows, exportColumns, `${filename}.pdf`, {
+      title: "Clubes",
+    });
+    return;
+  }
+
+  await exportToExcel(rows, exportColumns, `${filename}.xlsx`);
 }
 
 const columns = [
@@ -187,12 +217,30 @@ watch(openModal, (value) => {
         />
       </div>
 
-      <UButton
-        label="Novo clube"
-        class="cursor-pointer"
-        icon="i-lucide-plus"
-        @click="novoClube"
-      />
+      <div class="flex flex-wrap justify-end gap-2">
+        <UButton
+          label="PDF"
+          icon="i-lucide-file-down"
+          color="neutral"
+          variant="soft"
+          :disabled="loading || filteredClubes.length === 0"
+          @click="baixarClubes('pdf')"
+        />
+        <UButton
+          label="Excel"
+          icon="i-lucide-file-spreadsheet"
+          color="neutral"
+          variant="soft"
+          :disabled="loading || filteredClubes.length === 0"
+          @click="baixarClubes('xlsx')"
+        />
+        <UButton
+          label="Novo clube"
+          class="cursor-pointer"
+          icon="i-lucide-plus"
+          @click="novoClube"
+        />
+      </div>
     </div>
 
     <div class="mt-4">

@@ -4,6 +4,7 @@ import type {
   PagamentoLista,
   StatusPagamento,
 } from "~/composables/usePayments";
+import { useExport, type ExportColumn } from "~/composables/useExport";
 
 definePageMeta({
   layout: "app-layout",
@@ -12,6 +13,7 @@ definePageMeta({
 const { listar } = usePayments();
 const { get } = useCachedApi();
 const toast = useToast();
+const { exportToExcel, exportToPdf } = useExport();
 
 type SelectOption = {
   label: string;
@@ -328,6 +330,59 @@ function getRowTotal(row: GridRow) {
   }, 0);
 }
 
+const exportColumns = computed<ExportColumn[]>(() => [
+  { header: "Sócio", key: "socioNome" },
+  {
+    header: "Plano",
+    key: "planoNome",
+    format: (value) => String(value || "-"),
+  },
+  ...meses.value.map((mes) => ({
+    header: formatMes(mes),
+    key: mes,
+    format: (value: unknown) => formatCurrency(value as number),
+  })),
+  {
+    header: "Total",
+    key: "total",
+    format: (value) => formatCurrency(value as number),
+  },
+]);
+
+const exportRows = computed<Record<string, unknown>[]>(() =>
+  grid.value.map((row) => ({
+    socioNome: row.socioNome,
+    planoNome: row.planoNome || "-",
+    ...Object.fromEntries(
+      meses.value.map((mes) => [mes, row.pagamentos[mes]?.valorFinal ?? 0]),
+    ),
+    total: getRowTotal(row),
+  })),
+);
+
+async function baixarPlanilha(formato: "pdf" | "xlsx") {
+  const filename = `planilha-mensalidades-${filters.ano}`;
+
+  if (formato === "pdf") {
+    await exportToPdf(
+      exportRows.value,
+      exportColumns.value,
+      `${filename}.pdf`,
+      {
+        title: `Planilha de mensalidades - ${filters.ano}`,
+        landscape: true,
+      },
+    );
+    return;
+  }
+
+  await exportToExcel(
+    exportRows.value,
+    exportColumns.value,
+    `${filename}.xlsx`,
+  );
+}
+
 watch(
   () => filters.clubeId,
   async (newClubId) => {
@@ -438,13 +493,31 @@ onMounted(async () => {
             class="cursor-pointer"
           />
 
-          <UButton
-            to="/payments"
-            icon="i-lucide-list"
-            label="Ver listagem"
-            variant="soft"
-            class="cursor-pointer"
-          />
+          <div class="flex flex-wrap justify-end gap-2">
+            <UButton
+              label="PDF"
+              icon="i-lucide-file-down"
+              color="neutral"
+              variant="soft"
+              :disabled="loading || exportRows.length === 0"
+              @click="baixarPlanilha('pdf')"
+            />
+            <UButton
+              label="Excel"
+              icon="i-lucide-file-spreadsheet"
+              color="neutral"
+              variant="soft"
+              :disabled="loading || exportRows.length === 0"
+              @click="baixarPlanilha('xlsx')"
+            />
+            <UButton
+              to="/payments"
+              icon="i-lucide-list"
+              label="Ver listagem"
+              variant="soft"
+              class="cursor-pointer"
+            />
+          </div>
         </div>
       </UCard>
 

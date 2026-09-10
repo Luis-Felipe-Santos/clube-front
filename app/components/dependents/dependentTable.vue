@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from "vue";
 import DependentFormModal from "~/components/dependents/dependentFormModal.vue";
+import { useExport, type ExportColumn } from "~/composables/useExport";
 
 type Dependente = {
   id: number;
@@ -23,6 +24,7 @@ const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
 const { get, patch } = useCachedApi();
+const { exportToExcel, exportToPdf } = useExport();
 
 const dependentes = ref<Dependente[]>([]);
 const loading = ref(false);
@@ -168,6 +170,30 @@ async function handleSaved() {
   await fetchDependentes();
 }
 
+const exportColumns: ExportColumn[] = [
+  { header: "Nome", key: "nome" },
+  { header: "Parentesco", key: "parentesco" },
+  {
+    header: "Status",
+    key: "status",
+    format: (value) => String(value || "ATIVO"),
+  },
+];
+
+async function baixarDependentes(formato: "pdf" | "xlsx") {
+  const rows = filteredDependentes.value as Record<string, unknown>[];
+  const filename = `dependentes-${new Date().toISOString().slice(0, 10)}`;
+
+  if (formato === "pdf") {
+    await exportToPdf(rows, exportColumns, `${filename}.pdf`, {
+      title: "Dependentes",
+    });
+    return;
+  }
+
+  await exportToExcel(rows, exportColumns, `${filename}.xlsx`);
+}
+
 const columns = [
   {
     accessorKey: "imagemPreviewUrl",
@@ -285,13 +311,31 @@ watch(
         </p>
       </div>
 
-      <UButton
-        label="Novo dependente"
-        icon="i-lucide-plus"
-        color="success"
-        @click="novoDependente"
-        class="cursor-pointer"
-      />
+      <div class="flex flex-wrap justify-end gap-2">
+        <UButton
+          label="PDF"
+          icon="i-lucide-file-down"
+          color="neutral"
+          variant="soft"
+          :disabled="loading || filteredDependentes.length === 0"
+          @click="baixarDependentes('pdf')"
+        />
+        <UButton
+          label="Excel"
+          icon="i-lucide-file-spreadsheet"
+          color="neutral"
+          variant="soft"
+          :disabled="loading || filteredDependentes.length === 0"
+          @click="baixarDependentes('xlsx')"
+        />
+        <UButton
+          label="Novo dependente"
+          icon="i-lucide-plus"
+          color="success"
+          @click="novoDependente"
+          class="cursor-pointer"
+        />
+      </div>
     </div>
 
     <div class="mb-4 max-w-sm">

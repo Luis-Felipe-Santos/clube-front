@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from "vue";
 import PlanFormModal from "./planFormModal.vue";
+import { useExport, type ExportColumn } from "~/composables/useExport";
 
 type Plano = {
   id: number;
@@ -25,6 +26,7 @@ const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
 const { get, del } = useCachedApi();
+const { exportToExcel, exportToPdf } = useExport();
 
 const openModal = ref(false);
 const loading = ref(false);
@@ -189,6 +191,45 @@ function handleSuccess() {
   fetchPlanos();
 }
 
+const exportColumns: ExportColumn[] = [
+  { header: "Nome", key: "nome" },
+  {
+    header: "Valor",
+    key: "valor",
+    format: (value) => formatCurrency(Number(value)),
+  },
+  {
+    header: "Periodicidade",
+    key: "periodicidade",
+    format: (value) =>
+      ({
+        MENSAL: "Mensal",
+        TRIMESTRAL: "Trimestral",
+        SEMESTRAL: "Semestral",
+        ANUAL: "Anual",
+      })[String(value)] || "N/A",
+  },
+  {
+    header: "Status",
+    key: "status",
+    format: (value) => String(value || "N/A"),
+  },
+];
+
+async function baixarPlanos(formato: "pdf" | "xlsx") {
+  const rows = filteredPlanos.value as Record<string, unknown>[];
+  const filename = `planos-${new Date().toISOString().slice(0, 10)}`;
+
+  if (formato === "pdf") {
+    await exportToPdf(rows, exportColumns, `${filename}.pdf`, {
+      title: "Planos",
+    });
+    return;
+  }
+
+  await exportToExcel(rows, exportColumns, `${filename}.xlsx`);
+}
+
 const columns = [
   {
     accessorKey: "nome",
@@ -322,12 +363,30 @@ watch(openModal, (value) => {
       </div>
 
       <div class="flex justify-end">
-        <UButton
-          label="Novo plano"
-          icon="i-lucide-plus"
-          @click="novoPlano"
-          class="cursor-pointer"
-        />
+        <div class="flex flex-wrap justify-end gap-2">
+          <UButton
+            label="PDF"
+            icon="i-lucide-file-down"
+            color="neutral"
+            variant="soft"
+            :disabled="loading || filteredPlanos.length === 0"
+            @click="baixarPlanos('pdf')"
+          />
+          <UButton
+            label="Excel"
+            icon="i-lucide-file-spreadsheet"
+            color="neutral"
+            variant="soft"
+            :disabled="loading || filteredPlanos.length === 0"
+            @click="baixarPlanos('xlsx')"
+          />
+          <UButton
+            label="Novo plano"
+            icon="i-lucide-plus"
+            @click="novoPlano"
+            class="cursor-pointer"
+          />
+        </div>
       </div>
     </div>
 
