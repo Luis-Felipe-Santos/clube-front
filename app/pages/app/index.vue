@@ -181,92 +181,47 @@ onMounted(() => {
         </UCard>
       </div>
 
-      <div class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <UCard>
-          <h3 class="text-base font-semibold text-highlighted">
-            Ações rápidas
-          </h3>
+      <UCard>
+        <h3 class="text-base font-semibold text-highlighted">Ações rápidas</h3>
 
-          <div class="mt-4 space-y-2">
-            <UButton
-              to="/clubs"
-              color="neutral"
-              variant="soft"
-              class="w-full justify-start"
-              icon="i-lucide-building2"
-            >
-              Ver clubes
-            </UButton>
-            <UButton
-              to="/members"
-              color="neutral"
-              variant="soft"
-              class="w-full justify-start"
-              icon="i-lucide-users"
-            >
-              Gerenciar sócios
-            </UButton>
-            <UButton
-              to="/payments"
-              color="neutral"
-              variant="soft"
-              class="w-full justify-start"
-              icon="i-lucide-credit-card"
-            >
-              Consultar pagamentos
-            </UButton>
-            <UButton
-              to="/payments/planilha"
-              color="primary"
-              class="w-full justify-start"
-              icon="i-lucide-file-spreadsheet"
-            >
-              Abrir planilha
-            </UButton>
-          </div>
-        </UCard>
-
-        <UCard>
-          <div class="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h3 class="text-base font-semibold text-highlighted">
-                Avisos do dia
-              </h3>
-              <p class="text-sm text-muted">
-                Situação operacional mais relevante
-              </p>
-            </div>
-            <UBadge color="neutral" variant="soft">
-              {{ totalPagamentos }} registros
-            </UBadge>
-          </div>
-
-          <div class="space-y-3">
-            <div class="rounded-xl border border-default/60 p-3">
-              <p class="text-sm font-medium text-highlighted">Clubes ativos</p>
-              <p class="mt-1 text-2xl font-semibold text-primary">
-                {{ totalClubes }}
-              </p>
-            </div>
-
-            <div class="rounded-xl border border-default/60 p-3">
-              <p class="text-sm font-medium text-highlighted">Sócios ativos</p>
-              <p class="mt-1 text-2xl font-semibold text-success">
-                {{ totalSocios }}
-              </p>
-            </div>
-
-            <div class="rounded-xl border border-default/60 p-3">
-              <p class="text-sm font-medium text-highlighted">
-                Receita acumulada
-              </p>
-              <p class="mt-1 text-2xl font-semibold text-warning">
-                {{ formatCurrency(totalReceita) }}
-              </p>
-            </div>
-          </div>
-        </UCard>
-      </div>
+        <div class="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+          <UButton
+            to="/clubs"
+            color="neutral"
+            variant="soft"
+            class="w-full justify-start"
+            icon="i-lucide-building2"
+          >
+            Ver clubes
+          </UButton>
+          <UButton
+            to="/members"
+            color="neutral"
+            variant="soft"
+            class="w-full justify-start"
+            icon="i-lucide-users"
+          >
+            Gerenciar sócios
+          </UButton>
+          <UButton
+            to="/payments"
+            color="neutral"
+            variant="soft"
+            class="w-full justify-start"
+            icon="i-lucide-credit-card"
+          >
+            Consultar pagamentos
+          </UButton>
+          <UButton
+            to="/payments/planilha"
+            color="primary"
+            class="w-full justify-start"
+            icon="i-lucide-file-spreadsheet"
+          >
+            Abrir planilha
+          </UButton>
+        </div>
+      </UCard>
 
       <UCard>
         <div class="mb-4 flex items-center justify-between gap-3">
