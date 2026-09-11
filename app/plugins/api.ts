@@ -65,7 +65,18 @@ export default defineNuxtPlugin(() => {
         }
       }
 
-      await navigateTo('/auth/login')
+      if (response.status === 401) {
+        accessToken.value = null
+        refreshToken.value = null
+        await navigateTo('/auth/login')
+        return
+      }
+
+      if (response.status === 403) {
+        return
+      }
+
+      return
     }
   })
 

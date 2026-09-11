@@ -1,13 +1,26 @@
 import { defineStore } from "pinia";
 import { useApi } from "~/composables/useApi";
 
-export const useAuthStore = defineStore("auth", () => {
-  const accessToken = useCookie<string | null>("access_token");
-  const refreshToken = useCookie<string | null>("refresh_token");
-  const user = ref<any>(null);
-  const loading = ref(false);
+type UserProfile = {
+  id?: number
+  nome?: string
+  email?: string
+  cpf?: string
+  telefone?: string
+  imagemUrl?: string | null
+  role?: string
+  roles?: string[]
+  clubeId?: number | null
+}
 
-  const { get, post } = useApi();
+export const useAuthStore = defineStore('auth', () => {
+  const accessToken = useCookie<string | null>('access_token')
+  const refreshToken = useCookie<string | null>('refresh_token')
+  const user = ref<UserProfile | null>(null)
+  const loading = ref(false)
+
+  const { get, post, patch, put } = useApi()
+  const { invalidateAll } = useCachedApi()
 
   const fetchUser = async () => {
     if (!accessToken.value) return;
@@ -19,7 +32,7 @@ export const useAuthStore = defineStore("auth", () => {
       const status =
         error?.response?.status || error?.status || error?.data?.status;
 
-      if (status === 401 || status === 403) {
+      if (status === 401) {
         user.value = null;
         accessToken.value = null;
         refreshToken.value = null;
@@ -32,6 +45,8 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const login = async (email: string, senha: string) => {
+    invalidateAll();
+
     const response: any = await $fetch("/auth/login", {
       baseURL: useRuntimeConfig().public.apiBase,
       method: "POST",
@@ -49,6 +64,7 @@ export const useAuthStore = defineStore("auth", () => {
   };
 
   const logout = () => {
+    invalidateAll();
     accessToken.value = null;
     refreshToken.value = null;
     user.value = null;
@@ -67,6 +83,25 @@ export const useAuthStore = defineStore("auth", () => {
       email,
       senha,
     });
+  };
+
+  const updateProfile = async (
+    payload: Partial<UserProfile> & { senha?: string },
+  ) => {
+    const userId = user.value?.id;
+
+    if (!userId) {
+      throw new Error("Usuário não identificado para atualização.");
+    }
+
+    const response = await put<UserProfile, Partial<UserProfile> & { senha?: string }>(`/usuarios/${userId}`, payload);
+
+    user.value = {
+      ...(user.value ?? {}),
+      ...response,
+    };
+
+    return user.value;
   };
 
   const forgotPassword = async (email: string) => {
@@ -102,6 +137,7 @@ export const useAuthStore = defineStore("auth", () => {
     logout,
     fetchUser,
     register,
+    updateProfile,
     forgotPassword,
     resetPassword,
   };
