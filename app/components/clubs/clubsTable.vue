@@ -16,7 +16,11 @@ const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
-const { get } = useCachedApi();
+const { get } = useCachedApi({
+  cache: true,
+  staleWhileRevalidate: true,
+  ttl: 5 * 60 * 1000,
+});
 const { exportToExcel, exportToPdf } = useExport();
 
 const openModal = ref(false);

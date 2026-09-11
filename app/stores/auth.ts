@@ -1,90 +1,97 @@
-import { defineStore } from 'pinia'
+import { defineStore } from "pinia";
+import { useApi } from "~/composables/useApi";
 
-export const useAuthStore = defineStore('auth', () => {
-  const accessToken = useCookie<string | null>('access_token')
-  const refreshToken = useCookie<string | null>('refresh_token')
-  const user = ref<any>(null)
-  const loading = ref(false)
+export const useAuthStore = defineStore("auth", () => {
+  const accessToken = useCookie<string | null>("access_token");
+  const refreshToken = useCookie<string | null>("refresh_token");
+  const user = ref<any>(null);
+  const loading = ref(false);
 
-  const { get, post } = useApi()
+  const { get, post } = useApi();
 
   const fetchUser = async () => {
-    if (!accessToken.value) return
+    if (!accessToken.value) return;
 
     try {
-      loading.value = true
-      user.value = await get('/usuarios/me')
+      loading.value = true;
+      user.value = await get("/usuarios/me");
     } catch (error: any) {
-      const status = error?.response?.status || error?.status || error?.data?.status
+      const status =
+        error?.response?.status || error?.status || error?.data?.status;
 
       if (status === 401 || status === 403) {
-        user.value = null
-        accessToken.value = null
-        refreshToken.value = null
+        user.value = null;
+        accessToken.value = null;
+        refreshToken.value = null;
       } else {
-        throw error
+        throw error;
       }
     } finally {
-      loading.value = false
+      loading.value = false;
     }
-  }
+  };
 
   const login = async (email: string, senha: string) => {
-    const response: any = await $fetch('/auth/login', {
+    const response: any = await $fetch("/auth/login", {
       baseURL: useRuntimeConfig().public.apiBase,
-      method: 'POST',
-      body: { email, senha }
-    })
- 
-    accessToken.value = response.token
+      method: "POST",
+      body: { email, senha },
+    });
 
-    user.value = await $fetch('/usuarios/me', {
+    accessToken.value = response.token;
+
+    user.value = await $fetch("/usuarios/me", {
       baseURL: useRuntimeConfig().public.apiBase,
       headers: {
-        Authorization: `Bearer ${response.token}`
-      }
-    })
-  }
+        Authorization: `Bearer ${response.token}`,
+      },
+    });
+  };
 
   const logout = () => {
-    accessToken.value = null
-    refreshToken.value = null
-    user.value = null
-    navigateTo('/auth/login')
-  }
+    accessToken.value = null;
+    refreshToken.value = null;
+    user.value = null;
+    navigateTo("/auth/login");
+  };
 
-  const register = async (nome: string, cpf: string, email: string, senha: string) => {
-  await post('/cadastro', {
-    nome,
-    cpf,
-    email,
-    senha
-  })
-}
+  const register = async (
+    nome: string,
+    cpf: string,
+    email: string,
+    senha: string,
+  ) => {
+    await post("/cadastro", {
+      nome,
+      cpf,
+      email,
+      senha,
+    });
+  };
 
   const forgotPassword = async (email: string) => {
-    await $fetch('/auth/forgot-password', {
+    await $fetch("/auth/forgot-password", {
       baseURL: useRuntimeConfig().public.apiBase,
-      method: 'POST',
-      body: { email }
-    })
-  }
+      method: "POST",
+      body: { email },
+    });
+  };
 
   const resetPassword = async (
     token: string,
     newPassword: string,
-    confirmPassword: string
+    confirmPassword: string,
   ) => {
-    await $fetch('/auth/reset-password', {
+    await $fetch("/auth/reset-password", {
       baseURL: useRuntimeConfig().public.apiBase,
-      method: 'POST',
+      method: "POST",
       body: {
         token,
         newPassword,
-        confirmPassword
-      }
-    })
-  }
+        confirmPassword,
+      },
+    });
+  };
 
   return {
     user,
@@ -96,6 +103,6 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUser,
     register,
     forgotPassword,
-    resetPassword
-  }
-})
+    resetPassword,
+  };
+});

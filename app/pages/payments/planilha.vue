@@ -570,18 +570,30 @@ onMounted(async () => {
               <tr
                 v-for="(row, index) in paginatedGrid"
                 :key="row.socioId"
-                :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
+                :class="
+                  index % 2 === 0
+                    ? 'bg-white dark:bg-slate-900'
+                    : 'bg-gray-50/40 dark:bg-slate-800/70'
+                "
               >
                 <td
                   class="border-b border-r border-gray-200 px-4 py-3 font-medium text-gray-900 dark:border-slate-700 dark:text-slate-100"
-                  :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
+                  :class="
+                    index % 2 === 0
+                      ? 'bg-white dark:bg-slate-900'
+                      : 'bg-gray-50/40 dark:bg-slate-800/70'
+                  "
                 >
                   {{ row.socioNome }}
                 </td>
 
                 <td
                   class="border-b border-r border-gray-200 px-4 py-3 text-gray-600 dark:border-slate-700 dark:text-slate-300"
-                  :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
+                  :class="
+                    index % 2 === 0
+                      ? 'bg-white dark:bg-slate-900'
+                      : 'bg-gray-50/40 dark:bg-slate-800/70'
+                  "
                 >
                   {{ row.planoNome || "-" }}
                 </td>
@@ -607,7 +619,11 @@ onMounted(async () => {
 
                 <td
                   class="border-b border-gray-200 px-4 py-3 text-center font-semibold text-gray-900 dark:border-slate-700 dark:text-slate-100"
-                  :class="index % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50/40 dark:bg-slate-800/70'"
+                  :class="
+                    index % 2 === 0
+                      ? 'bg-white dark:bg-slate-900'
+                      : 'bg-gray-50/40 dark:bg-slate-800/70'
+                  "
                 >
                   {{ formatCurrency(getRowTotal(row)) }}
                 </td>

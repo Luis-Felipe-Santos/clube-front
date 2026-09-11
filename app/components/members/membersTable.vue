@@ -40,7 +40,11 @@ const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
-const { get, patch } = useCachedApi();
+const { get, patch } = useCachedApi({
+  cache: true,
+  staleWhileRevalidate: true,
+  ttl: 5 * 60 * 1000,
+});
 const { exportToExcel, exportToPdf } = useExport();
 
 const members = ref<Member[]>([]);
@@ -144,8 +148,6 @@ function getStatusColor(status?: string) {
       return "neutral";
   }
 }
-
-
 
 function openImagePreview(image?: string, name?: string) {
   if (!image) return;
@@ -429,7 +431,7 @@ const columns = [
       return member.planoNome || "Sem plano";
     },
   },
- 
+
   {
     accessorKey: "status",
     header: "Status",

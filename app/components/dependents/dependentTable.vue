@@ -23,7 +23,11 @@ const UButton = resolveComponent("UButton");
 const UDropdownMenu = resolveComponent("UDropdownMenu");
 
 const toast = useToast();
-const { get, patch } = useCachedApi();
+const { get, patch } = useCachedApi({
+  cache: true,
+  staleWhileRevalidate: true,
+  ttl: 5 * 60 * 1000,
+});
 const { exportToExcel, exportToPdf } = useExport();
 
 const dependentes = ref<Dependente[]>([]);
